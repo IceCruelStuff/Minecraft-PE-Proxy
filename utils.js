@@ -16,26 +16,39 @@ if (!fs.existsSync(configPath))
 
 //Read config from command line arguments, environment variables, and the config file
 //(each one takes precedence over the next)
-config.nconf.argv().env().file({ file: configPath });
-
-logging.packet = function (msg)
-{
-    logging.emit('packet', msg);
-}
+//Use '__' seperator for env, since bash doesn't allow ':' in env variables
+config.nconf.argv().env({separator: '__'}).file({ file: configPath });
 
 logging.debug = function (msg)
 {
-    logging.emit('debug', msg);
+    if (checkLogging('debug'))
+    {
+        logging.emit('debug', msg);
+    }
 }
 
 logging.info = function (msg)
 {
-    logging.emit('info', msg);
+    if (checkLogging('info'))
+    {
+        logging.emit('info', msg);
+    }
 }
 
 logging.logerror = function (msg)
 {
-    logging.emit('logerror', msg);
+    if (checkLogging('logerror'))
+    {
+        logging.emit('logerror', msg);
+    }
+}
+
+logging.mysql = function (msg)
+{
+    if (checkLogging('mysql'))
+    {
+        logging.emit('mysql', msg);
+    }
 }
 
 config.change = function (event, options)
@@ -45,7 +58,7 @@ config.change = function (event, options)
 
 misc.isNumber = function (n)
 {
-  return !isNaN(parseFloat(n)) && isFinite(n);
+    return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
 misc.toBoolean = function (obj)
@@ -60,14 +73,28 @@ misc.toBoolean = function (obj)
     return false;
 }
 
+misc.currentTime = function()
+{
+    return Math.round(new Date().getTime() / 1000);
+}
+
 config.nconf.getBoolean = function(key)
 {
-    return misc.toBoolean(config.nconf.get(key))
+    return misc.toBoolean(config.nconf.get(key));
 }
 
 config.nconf.getInt = function(key)
 {
-    return parseInt(config.nconf.get(key))
+    return parseInt(config.nconf.get(key));
+}
+
+function checkLogging(type)
+{
+    if (config.nconf.getBoolean('logging:' + type) || config.nconf.getBoolean('logging:all'))
+    {
+        return true;
+    }
+    return false;
 }
 
 exports.logging = logging;
